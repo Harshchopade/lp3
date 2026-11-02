@@ -1,0 +1,354 @@
+
+"""
+QUESTION 4 (ML):
+Diabetes Prediction using K-Nearest Neighbors (KNN).
+
+Objective:
+Predict whether a patient has diabetes or not using KNN.
+
+Outcome:
+0 = Non-diabetic
+1 = Diabetic
+
+STEPS:
+1. Import libraries.
+2. Load dataset.
+3. Separate features and target.
+4. Split data into training and testing sets.
+5. Handle missing values and normalize data.
+6. Train KNN classifier.
+7. Calculate confusion matrix and evaluation metrics.
+8. Display graphs.
+"""
+
+# %% STEP 1: IMPORT LIBRARIES
+
+import os
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Import KNN classification algorithm
+from sklearn.neighbors import KNeighborsClassifier
+
+# Import functions to split dataset and evaluate model
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
+from sklearn.metrics import (
+    accuracy_score,
+    confusion_matrix,
+    precision_score,
+    recall_score
+)
+
+
+# Find the folder containing this Python file
+if "__file__" in globals():
+    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+else:
+    SCRIPT_DIR = os.getcwd()
+
+# Dataset file location
+DATASET_FILE = os.path.join(SCRIPT_DIR, "diabetes.csv")
+
+
+# %% STEP 2: CREATE DEMO DATASET IF FILE IS MISSING
+
+# If diabetes.csv is unavailable, create a small demo dataset.
+# For actual practical results, use the original Kaggle dataset.
+
+DEMO_DIABETES_CSV = """Pregnancies,Glucose,BloodPressure,SkinThickness,Insulin,BMI,Pedigree,Age,Outcome
+6,148,72,35,0,33.6,0.627,50,1
+1,85,66,29,0,26.6,0.351,31,0
+8,183,64,0,0,23.3,0.672,32,1
+1,89,66,23,94,28.1,0.167,21,0
+0,137,40,35,168,43.1,2.288,33,1
+5,116,74,0,0,25.6,0.201,30,0
+3,78,50,32,88,31.0,0.248,26,1
+10,115,0,0,0,35.3,0.134,29,0
+2,197,70,45,543,30.5,0.158,53,1
+8,125,96,0,0,0.0,0.232,54,1
+4,110,92,0,0,37.6,0.191,30,0
+2,100,66,38,150,32.0,0.15,22,0
+7,105,0,0,0,0.0,0.305,24,0
+0,180,66,39,0,42.0,1.4,42,1
+1,95,60,18,90,24.5,0.21,25,0
+6,95,70,32,95,30.7,0.29,28,0
+"""
+
+# Check whether the dataset already exists
+if os.path.exists(DATASET_FILE):
+
+    print("Using dataset:", DATASET_FILE)
+
+else:
+    # Create demo CSV file
+    with open(DATASET_FILE, "w", encoding="utf-8") as file:
+        file.write(DEMO_DIABETES_CSV)
+
+    print("Created demo dataset:", DATASET_FILE)
+
+
+# %% STEP 3: LOAD THE DATASET
+
+# Read diabetes dataset using Pandas
+data = pd.read_csv(DATASET_FILE)
+
+# Display dataset information
+print("\nDataset Shape:", data.shape)
+print(data.head())
+
+# X contains all input features
+# Outcome is excluded because it is the target column
+X = data.drop(columns=["Outcome"])
+
+# y contains the target/output column
+# 0 = Non-diabetic, 1 = Diabetic
+y = data["Outcome"]
+
+
+# %% STEP 4: SPLIT DATA INTO TRAINING AND TESTING SETS
+
+# 80% data is used for training
+# 20% data is used for testing
+# random_state=42 gives reproducible results
+# stratify=y maintains the class distribution
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.20,
+    random_state=42,
+    stratify=y
+)
+
+# Make copies so original data is not modified
+X_train = X_train.copy()
+X_test = X_test.copy()
+
+print("\nTraining Data:", X_train.shape)
+print("Testing Data :", X_test.shape)
+
+
+# %% STEP 5: HANDLE MISSING VALUES
+
+# In this dataset, zero values in these columns
+# represent missing measurements rather than actual values.
+
+columns = [
+    "Glucose",
+    "BloodPressure",
+    "SkinThickness",
+    "Insulin",
+    "BMI"
+]
+
+# Replace invalid zero values with the median
+# calculated from the training data only.
+
+for column in columns:
+
+    # Calculate median using only positive training values
+    median = X_train.loc[
+        X_train[column] > 0, column
+    ].median()
+
+    # Replace zero values in training data
+    X_train[column] = X_train[column].replace(0, median)
+
+    # Replace zero values in testing data
+    # Use the same training median
+    X_test[column] = X_test[column].replace(0, median)
+
+
+# %% STEP 6: NORMALIZE THE DATA
+
+# StandardScaler converts features to a common scale.
+# This is important because KNN calculates distances.
+
+scaler = StandardScaler()
+
+# Fit scaler on training data and normalize it
+X_train = scaler.fit_transform(X_train)
+
+# Apply the same scaling to testing data
+X_test = scaler.transform(X_test)
+
+print("\nData Normalization Completed")
+
+
+# %% STEP 7: TRAIN KNN CLASSIFIER
+
+# KNN considers the 5 nearest training samples
+# to classify a new patient.
+
+knn = KNeighborsClassifier(n_neighbors=5)
+
+# Train the KNN model using training data
+knn.fit(X_train, y_train)
+
+# Predict diabetes outcomes for test data
+y_pred = knn.predict(X_test)
+
+
+# %% STEP 8: CALCULATE CONFUSION MATRIX AND METRICS
+
+# Confusion matrix compares actual and predicted results
+cm = confusion_matrix(y_test, y_pred)
+
+# Calculate accuracy
+accuracy = accuracy_score(y_test, y_pred)
+
+# Error rate = 1 - accuracy
+error_rate = 1 - accuracy
+
+# Precision measures correct positive predictions
+precision = precision_score(
+    y_test, y_pred, zero_division=0
+)
+
+# Recall measures how many actual positive cases were found
+recall = recall_score(
+    y_test, y_pred, zero_division=0
+)
+
+# Display confusion matrix
+print("\nConfusion Matrix:")
+print(cm)
+
+# Display evaluation results
+print("\nAccuracy:", round(accuracy, 4))
+print("Accuracy Percentage:", round(accuracy * 100, 2), "%")
+
+print("Error Rate:", round(error_rate, 4))
+print("Error Rate Percentage:", round(error_rate * 100, 2), "%")
+
+print("Precision:", round(precision, 4))
+print("Recall:", round(recall, 4))
+
+
+# %% STEP 9: OBSERVATION
+
+print("\nOBSERVATION")
+
+print("Accuracy measures the percentage of correct predictions.")
+
+print("Error rate measures the percentage of incorrect predictions.")
+
+print("Precision measures how many predicted diabetic cases")
+print("were actually diabetic.")
+
+print("Recall measures how many actual diabetic cases")
+print("were correctly identified.")
+
+
+# %% STEP 10: PLOT CONFUSION MATRIX
+
+# Display confusion matrix as a heatmap
+
+fig, axis = plt.subplots(figsize=(6, 5))
+
+image = axis.imshow(cm, cmap="Blues")
+
+# Display values inside the confusion matrix
+for row in range(cm.shape[0]):
+
+    for column in range(cm.shape[1]):
+
+        axis.text(
+            column,
+            row,
+            cm[row, column],
+            ha="center",
+            va="center"
+        )
+
+axis.set_title("KNN Confusion Matrix")
+
+axis.set_xlabel("Predicted (0 = Non-diabetic, 1 = Diabetic)")
+axis.set_ylabel("Actual (0 = Non-diabetic, 1 = Diabetic)")
+
+axis.set_xticks([0, 1])
+axis.set_yticks([0, 1])
+
+fig.colorbar(image, ax=axis)
+plt.tight_layout()
+plt.show()
+
+
+# %% STEP 11: PLOT EVALUATION METRICS
+
+# Compare all evaluation metrics using a bar graph
+
+names = ["Accuracy", "Error Rate", "Precision", "Recall"]
+
+values = [
+    accuracy,
+    error_rate,
+    precision,
+    recall
+]
+
+fig, axis = plt.subplots(figsize=(7, 5))
+
+bars = axis.bar(names, values)
+
+# Display metric values above each bar
+axis.bar_label(bars, fmt="%.3f")
+
+axis.set_ylim(0, 1.1)
+axis.set_title("KNN Evaluation Metrics")
+axis.set_ylabel("Score")
+axis.grid(axis="y", alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+
+# %% STEP 12: CHECK ACCURACY FOR DIFFERENT K VALUES
+
+# Test KNN with different numbers of neighbors
+# to understand how the value of K affects accuracy.
+
+neighbours = list(range(1, 11))
+
+scores = []
+
+for k in neighbours:
+
+    # Create a new KNN model for each K
+    model = KNeighborsClassifier(n_neighbors=k)
+
+    # Train the model
+    model.fit(X_train, y_train)
+
+    # Predict test results
+    prediction = model.predict(X_test)
+
+    # Calculate accuracy
+    scores.append(accuracy_score(y_test, prediction))
+
+
+# Display accuracy for different K values
+fig, axis = plt.subplots(figsize=(7, 5))
+
+axis.plot(neighbours, scores, "o-")
+
+# Find K with highest observed test accuracy
+best_k = neighbours[scores.index(max(scores))]
+
+axis.axvline(
+    best_k,
+    linestyle="--",
+    label=f"Best K = {best_k}"
+)
+
+axis.set_title("Accuracy vs Number of Neighbors")
+axis.set_xlabel("Number of Neighbors (K)")
+axis.set_ylabel("Test Accuracy")
+
+axis.grid(alpha=0.3)
+axis.legend()
+
+plt.tight_layout()
+plt.show()

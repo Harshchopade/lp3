@@ -1,0 +1,181 @@
+/*
+ * QUESTION 5 (DAA) : N-Queens matrix with the first queen placed, solved by backtracking.
+ *
+ * Place N chess queens on an N x N board so that NO two queens attack each
+ * other. A queen attacks along its row, its column, and both diagonals - so a
+ * valid solution has exactly one queen per row and no two queens sharing a
+ * column, a "/" diagonal, or a "\" diagonal.
+ *
+ * HOW IT WORKS (BACKTRACKING):
+ *   1. Place queens one ROW at a time (each row must hold exactly one queen,
+ *      so we never try two rows at once).
+ *   2. In the current row, try every column; keep the column only if it is
+ *      "safe" against the queens already placed above.
+ *   3. Recurse for the next row. If some later row becomes impossible, return
+ *      here, REMOVE the queen (Backtrack) and try the next column.
+ *   4. A solution is found when all N rows hold a queen successfully; if every
+ *      option in this row fails, report failure upward.
+ *   This program follows the lab constraint: the FIRST queen is permanently
+ *   fixed at square (0, 0), so for some N (e.g. 6) the answer may legitimately
+ *   be "no solution" even though one exists with the first queen elsewhere.
+ *
+ * COMPLEXITY:
+ *   - Worst case: O(N!) states (exponential - the problem is NP-hard-ish),
+ *     but pruning (isSafe) throws away huge parts of the search tree early,
+ *     so small N (up to ~15) run comfortably fast.
+ *   - Space: O(N) recursion depth + O(N^2) board for printing.
+ *
+ * NOTES / INFO:
+ *   - The known solution counts: N=4 -> 2, N=8 -> 92 total solutions; this
+ *     program prints only the FIRST one found.
+ *   - No solution exists at all for N = 2 and N = 3.
+  *
+ * COMMANDS (run from inside this folder):
+ *   install dependencies : sudo apt install g++
+ *   compile and run      : g++ -std=c++17 -Wall q5_NQueens.cpp -o q5_NQueens && ./q5_NQueens
+*/
+
+
+#include <iostream>  // For input and output
+#include <vector>    // For using 2D vector (chessboard)
+
+using namespace std;
+
+// Global variable to store the size of the chessboard
+int g_n = 0;
+
+// 2D vector to represent the chessboard
+// 0 means empty cell and 1 means queen is placed
+vector<vector<int>> g_board;
+
+
+// Function to check whether placing a queen
+// at the given row and column is safe
+bool isSafe(int row, int col) {
+
+    // CHECK 1: Check the same column above the current row
+    // If a queen is found, the position is unsafe
+    for (int r = 0; r < row; ++r)
+        if (g_board[r][col])
+            return false;
+
+    // CHECK 2: Check the upper-left diagonal
+    // Move one row up and one column left each time
+    for (int r = row - 1, c = col - 1;
+         r >= 0 && c >= 0; --r, --c)
+
+        if (g_board[r][c])
+            return false;
+
+    // CHECK 3: Check the upper-right diagonal
+    // Move one row up and one column right each time
+    for (int r = row - 1, c = col + 1;
+         r >= 0 && c < g_n; --r, ++c)
+
+        if (g_board[r][c])
+            return false;
+
+    // If no queen is found in these directions,
+    // the current position is safe
+    return true;
+}
+
+
+// Recursive function to place queens row by row
+bool solveNQueens(int row) {
+
+    // BASE CONDITION:
+    // If all N rows have queens, solution is found
+    if (row == g_n)
+        return true;
+
+    // The first queen is already fixed at position (0, 0)
+    // So skip the first row and move to the next row
+    if (row == 0)
+        return solveNQueens(row + 1);
+
+    // Try placing a queen in every column of the current row
+    for (int col = 0; col < g_n; ++col) {
+
+        // Check whether the current position is safe
+        if (isSafe(row, col)) {
+
+            // STEP 1: Place the queen at this position
+            g_board[row][col] = 1;
+
+            // STEP 2: Recursively solve the next row
+            // If a solution is found, return true
+            if (solveNQueens(row + 1))
+                return true;
+
+            // STEP 3: BACKTRACKING
+            // If no solution is possible in the next rows,
+            // remove the queen and try another column
+            g_board[row][col] = 0;
+        }
+    }
+
+    // If no safe position is available in this row,
+    // return false to go back to the previous row
+    return false;
+}
+
+
+// Function to display the final chessboard
+void printBoard() {
+
+    cout << "\nSolution Matrix:\n";
+
+    // Print every row and column of the board
+    for (int r = 0; r < g_n; ++r) {
+
+        for (int c = 0; c < g_n; ++c) {
+            cout << g_board[r][c] << " ";
+        }
+
+        cout << "\n";
+    }
+}
+
+
+// Main function to execute the N-Queens program
+void run() {
+
+    // Take the size of the chessboard from the user
+    cout << "Enter the value of N: ";
+    cin >> g_n;
+
+    // N must be at least 1
+    if (g_n < 1) {
+        cout << "N must be at least 1.\n";
+        return;
+    }
+
+    // Create an N x N chessboard filled with zeros
+    g_board.assign(g_n, vector<int>(g_n, 0));
+
+    // Place the FIRST queen permanently at position (0, 0)
+    g_board[0][0] = 1;
+
+    // Start solving the problem from the first row
+    if (solveNQueens(0)) {
+
+        // If solution is found, display the board
+        printBoard();
+
+    } else {
+
+        // If no solution is found with the first queen fixed
+        cout << "No solution exists with the first queen at (0, 0).\n";
+    }
+}
+
+
+// Program execution starts from main()
+int main() {
+
+    // Call run() to execute the complete program
+    run();
+
+    return 0;
+}

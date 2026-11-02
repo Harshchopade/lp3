@@ -1,0 +1,143 @@
+/*
+ * QUESTION 6 (DAA) : Solve the Tower of Hanoi problem using recursion.
+ *
+ * Three pegs are named A (source), B (auxiliary) and C (destination). Peg A
+ * starts with n disks, largest at the bottom; they must all reach C while:
+ *   - only ONE disk moves at a time (the top disk of some peg), and
+ *   - a larger disk is never placed on top of a smaller one.
+ *
+ * HOW IT WORKS (DIVIDE AND CONQUER / RECURSION):
+ *   To move n disks from SOURCE to DESTINATION using AUXILIARY:
+ *   Step 1. move the top n-1 disks SOURCE -> AUXILIARY (using DESTINATION),
+ *           which uncovers the largest disk;
+ *   Step 2. move the largest disk SOURCE -> DESTINATION;
+ *   Step 3. move those n-1 disks AUXILIARY -> DESTINATION (using SOURCE).
+ *   Base case: n == 1 -> one direct move.
+ *
+ * TOTAL NUMBER OF MOVES:
+ *   T(n) = 2 * T(n-1) + 1  =>  T(n) = 2^n - 1.
+ *   It grows extremely fast: n = 10 -> 1,023 moves, n = 30 -> 1,073,741,823.
+ *
+ * COMPLEXITY:
+ *   - Time  : O(2^n) - the printed output itself has that many lines.
+ *   - Space : O(n)   - recursion stack, one frame per disk.
+ *
+ * NOTES / INFO:
+ *   - The roles of the three pegs ROTATE in every recursive call; this is why
+ *     the function takes source, auxiliary and destination as arguments
+ *     instead of hard-coding A, B and C.
+ *   - Run with n = 1, 2, 3 to see the sequence 1, 3, 7 moves; the trace after
+ *     each move shows that no larger disk ever lands on a smaller one.
+ *
+ * COMMANDS (run from inside this folder):
+ *   install dependencies : sudo apt install g++
+ *   compile and run      : g++ -std=c++17 -Wall q6_TowerOfHanoi.cpp -o q6_TowerOfHanoi && ./q6_TowerOfHanoi
+*/
+
+
+
+#include <iostream>  // For input and output
+#include <vector>    // Included in the original program
+
+using namespace std;
+
+
+// Recursive function to move n disks
+// from source peg to destination peg
+// using auxiliary peg
+void towerOfHanoi(int n, char source,
+                  char auxiliary, char destination) {
+
+    // BASE CASE:
+    // If only one disk is present,
+    // move it directly from source to destination
+    if (n == 1) {
+
+        cout << "Move disk 1 from "
+             << source << " to " << destination << "\n";
+
+        return;  // Stop this recursive call
+    }
+
+    // STEP 1:
+    // Move the top n-1 disks from source to auxiliary
+    // Use destination as the temporary peg
+    towerOfHanoi(n - 1, source, destination, auxiliary);
+
+
+    // STEP 2:
+    // Move the largest remaining disk (disk n)
+    // directly from source to destination
+    cout << "Move disk " << n << " from "
+         << source << " to " << destination << "\n";
+
+
+    // STEP 3:
+    // Move the n-1 disks from auxiliary to destination
+    // Use source as the temporary peg
+    towerOfHanoi(n - 1, auxiliary, source, destination);
+}
+
+
+// Function to calculate the total number of moves
+// Formula: 2^n - 1
+long long moveCount(int n) {
+
+    // 1LL means the calculation is performed using long long
+    return (1LL << n) - 1;
+}
+
+
+// Main function to take input and execute the program
+void run() {
+
+    int n;
+
+    // Ask the user to enter the number of disks
+    cout << "Enter the number of disks: ";
+    cin >> n;
+
+
+    // Check whether the number of disks is valid
+    if (n < 1) {
+
+        cout << "Number of disks must be at least 1.\n";
+        return;
+    }
+
+
+    // Limit the number of disks to 25
+    // because the number of moves increases very quickly
+    if (n > 25) {
+
+        cout << "That would print more than "
+             << moveCount(25)
+             << " lines; use 25 or fewer.\n";
+
+        return;
+    }
+
+
+    // Display the sequence of moves
+    cout << "\nSequence of moves:\n";
+
+
+    // Start the Tower of Hanoi process
+    // A = Source, B = Auxiliary, C = Destination
+    towerOfHanoi(n, 'A', 'B', 'C');
+
+
+    // Display the total number of moves
+    cout << "\nTotal moves = " << moveCount(n)
+         << "  (= 2^" << n << " - 1)\n";
+}
+
+
+// Program execution starts from main()
+int main() {
+
+    // Call run() to execute the complete program
+    run();
+
+    return 0;
+}

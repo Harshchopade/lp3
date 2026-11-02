@@ -1,0 +1,431 @@
+/*
+ * QUESTION 2 (DAA) : Implement Huffman Encoding using a greedy strategy.
+ *
+ * Compress a piece of text by assigning each character a variable-length binary
+ * code. Frequently used characters get SHORT codes and rare characters get
+ * LONG codes, so the total number of bits is smaller than using fixed-length
+ * codes (e.g. ASCII's 8 bits per character).
+ *
+ * HOW IT WORKS (GREEDY TREE CONSTRUCTION):
+ *   1. Count the frequency of every character in the text.
+ *   2. Put every character in a min-priority-queue keyed by frequency.
+ *   3. Repeatedly remove the two nodes with the SMALLEST frequency, create a
+ *      parent node whose frequency is their sum, and push it back. Each such
+ *      merge is one internal node of the tree. Repeat until one node is left:
+ *      this is the root of the Huffman tree.
+ *   4. The tree assigns codes naturally:
+ *        - every left branch contributes a '0',
+ *        - every right branch contributes a '1',
+ *        - the code of a leaf is the path from the root to it.
+ *   5. ENCODING  : concatenating the code of each character of the text.
+ *      DECODING  : walk the tree from the root, one bit at a time; a leaf
+ *                  ends one character, then restart from the root. Decoding is
+ *                  unambiguous because no code is a prefix of another.
+ *
+ * WHY GREEDY IS OPTIMAL:
+ *   Merging the two least frequent nodes puts them deepest in the tree (longest
+ *   codes), which is exactly what minimises the total encoded length.
+ *
+ * COMPLEXITY:
+ *   - Frequency count       : O(n) over the text
+ *   - Tree building         : O(k log k) for k distinct characters
+ *   - Encode / decode       : O(n) per message
+ *
+ * NOTES / INFO:
+ *   - Interactive menu: build tree, encode, decode (same flow as the lab).
+ *   - A text with a single distinct character gets the special code "0".
+ *   - The code table depends on the text frequencies; decoding requires the
+ *     same tree that encoding produced.
+  *
+ * COMMANDS (run from inside this folder):
+ *   install dependencies : sudo apt install g++
+ *   compile and run      : g++ -std=c++17 -Wall q2_HuffmanEncoding.cpp -o q2_HuffmanEncoding && ./q2_HuffmanEncoding
+*/
+
+
+/*
+ QUESTION 2 (DAA):
+ Implement Huffman Encoding using Greedy Algorithm.
+
+ Huffman Encoding is a lossless compression technique.
+
+ Main idea:
+ Frequently occurring characters get shorter binary codes.
+ Rarely occurring characters get longer binary codes.
+
+ Example:
+ A = 0
+ B = 10
+ C = 110
+ D = 111
+
+ Steps:
+ 1. Count character frequencies.
+ 2. Insert characters into a Min Priority Queue.
+ 3. Select two nodes with minimum frequency.
+ 4. Combine them into a new parent node.
+ 5. Repeat until one root node remains.
+ 6. Generate binary codes from the tree.
+ 7. Encode and decode the text.
+*/
+
+#include <iostream>       // For cin and cout
+#include <map>            // For storing frequencies in sorted order
+#include <queue>          // For priority_queue
+#include <string>         // For string operations
+#include <unordered_map>  // For storing character codes and frequencies
+#include <vector>         // Used internally by priority_queue
+
+using namespace std;
+
+
+// STEP 1: CREATE A NODE STRUCTURE
+
+struct Node {
+
+    char ch;        // Stores the character
+    int freq;       // Stores frequency of character
+    Node* left;     // Pointer to left child
+    Node* right;    // Pointer to right child
+
+    // Constructor for a character node (leaf node).
+    Node(char symbol, int frequency)
+        : ch(symbol), freq(frequency),
+          left(nullptr), right(nullptr) {}
+
+    // Constructor for an internal/parent node.
+    // Internal nodes store the combined frequency.
+    Node(int frequency, Node* leftChild, Node* rightChild)
+        : ch('\0'), freq(frequency),
+          left(leftChild), right(rightChild) {}
+
+    // Check whether a node is a leaf node.
+    // A leaf node has no left or right child.
+    bool isLeaf() const {
+        return left == nullptr && right == nullptr;
+    }
+};
+
+
+// STEP 2: COMPARATOR FOR MIN PRIORITY QUEUE
+
+struct CompareFreq {
+
+    // Gives priority to the node having the smallest frequency.
+    bool operator()(const Node* a, const Node* b) const {
+        return a->freq > b->freq;
+    }
+};
+
+
+// Global variables:
+// g_root stores the root of the Huffman tree.
+// g_codes stores the binary code of each character.
+
+Node* g_root = nullptr;
+unordered_map<char, string> g_codes;
+
+
+// STEP 3: COUNT CHARACTER FREQUENCIES
+
+unordered_map<char, int> countFrequencies(const string& text) {
+
+    unordered_map<char, int> freq;
+
+    // Visit every character in the input text.
+    for (char c : text) {
+
+        // Increase the frequency of that character.
+        freq[c]++;
+    }
+
+    // Return the frequency table.
+    return freq;
+}
+
+
+// STEP 4: DISPLAY CHARACTER FREQUENCIES
+
+void displayFrequencies(const string& text) {
+
+    // map stores characters in sorted order.
+    map<char, int> frequencies;
+
+    // Count how many times each character occurs.
+    for (char ch : text) {
+        frequencies[ch]++;
+    }
+
+    cout << "\nCharacter Frequencies:\n";
+
+    // Display each character and its frequency.
+    for (const auto& [ch, count] : frequencies) {
+
+        if (ch == ' ')
+            cout << "[space]";
+        else if (ch == '\t')
+            cout << "[tab]";
+        else
+            cout << ch;
+
+        cout << " appeared " << count
+             << (count == 1 ? " time\n" : " times\n");
+    }
+}
+
+
+// STEP 5: GENERATE HUFFMAN CODES
+
+void generateCodes(Node* node, string code) {
+
+    // If node is NULL, stop.
+    if (node == nullptr)
+        return;
+
+    // If it is a leaf node, we have found a character.
+    if (node->isLeaf()) {
+
+        // Store the binary code for that character.
+        // Special case: if only one character exists, assign "0".
+        g_codes[node->ch] = code.empty() ? "0" : code;
+
+        return;
+    }
+
+    // Going left adds 0 to the code.
+    generateCodes(node->left, code + "0");
+
+    // Going right adds 1 to the code.
+    generateCodes(node->right, code + "1");
+}
+
+
+// STEP 6: BUILD THE HUFFMAN TREE
+
+void buildTree(const string& text) {
+
+    // First, count the frequency of each character.
+    unordered_map<char, int> freq = countFrequencies(text);
+
+    // Create a Min Priority Queue.
+    // The smallest frequency node comes first.
+    priority_queue<Node*, vector<Node*>, CompareFreq> pq;
+
+    // Insert every character into the priority queue.
+    for (const auto& [ch, count] : freq) {
+
+        pq.push(new Node(ch, count));
+    }
+
+    // Special case: only one distinct character.
+    if (pq.size() == 1) {
+
+        Node* only = pq.top();
+
+        // Create a root with the only character as its left child.
+        g_root = new Node(only->freq, only, nullptr);
+
+    } else {
+
+        // Repeat until only one node remains.
+        while (pq.size() > 1) {
+
+            // Remove the node with the smallest frequency.
+            Node* left = pq.top();
+            pq.pop();
+
+            // Remove the second smallest frequency node.
+            Node* right = pq.top();
+            pq.pop();
+
+            // Create a parent node with combined frequency.
+            Node* parent = new Node(
+                left->freq + right->freq,
+                left,
+                right
+            );
+
+            // Insert the new parent back into the queue.
+            pq.push(parent);
+        }
+
+        // The last remaining node becomes the root.
+        g_root = pq.top();
+    }
+
+    // Remove previously generated codes.
+    g_codes.clear();
+
+    // Generate new Huffman codes from the root.
+    generateCodes(g_root, "");
+}
+
+
+// STEP 7: ENCODE THE ORIGINAL TEXT
+
+string encode(const string& text) {
+
+    string encoded;
+
+    // Visit every character in the original text.
+    for (char c : text) {
+
+        // Add its corresponding binary code.
+        encoded += g_codes[c];
+    }
+
+    // Return the compressed binary string.
+    return encoded;
+}
+
+
+// STEP 8: DECODE THE ENCODED TEXT
+
+string decode(const string& encoded, Node* root) {
+
+    string decoded;
+
+    // Start decoding from the root node.
+    Node* current = root;
+
+    // Read the encoded bits one by one.
+    for (char bit : encoded) {
+
+        // If bit is 0, move left.
+        // If bit is 1, move right.
+        current = (bit == '0')
+                    ? current->left
+                    : current->right;
+
+        // If a leaf node is reached, character is found.
+        if (current->isLeaf()) {
+
+            // Add the character to the decoded text.
+            decoded += current->ch;
+
+            // Start again from the root for the next character.
+            current = root;
+        }
+    }
+
+    // Return the original decoded text.
+    return decoded;
+}
+
+
+// STEP 9: DISPLAY HUFFMAN CODES
+
+void displayCodes() {
+
+    cout << "\nHuffman Codes:\n";
+
+    // Display the binary code assigned to each character.
+    for (const auto& [ch, code] : g_codes) {
+
+        if (ch == ' ')
+            cout << "[space] : " << code << "\n";
+        else if (ch == '\t')
+            cout << "[tab] : " << code << "\n";
+        else
+            cout << ch << " : " << code << "\n";
+    }
+}
+
+
+// STEP 10: RUN THE PROGRAM
+
+void run() {
+
+    // Take text input from the user.
+    cout << "Enter text: ";
+
+    string text;
+
+    // getline allows spaces in the input.
+    getline(cin, text);
+
+    // Check whether input is empty.
+    if (text.empty()) {
+
+        cout << "Text cannot be empty.\n";
+        return;
+    }
+
+    // Display the frequency of each character.
+    displayFrequencies(text);
+
+    // Build the Huffman tree.
+    buildTree(text);
+
+    int choice;
+
+    // Display menu until the user chooses Exit.
+    do {
+
+        cout << "\n----- HUFFMAN ENCODING -----\n";
+        cout << "1. Build Huffman Tree\n";
+        cout << "2. Encode the Text\n";
+        cout << "3. Decode the Text\n";
+        cout << "4. Exit\n";
+
+        cout << "Enter your choice: ";
+
+        cin >> choice;
+
+        // Remove the remaining newline from input.
+        cin.ignore();
+
+        if (choice == 1) {
+
+            // Build the Huffman tree again.
+            buildTree(text);
+
+            cout << "\nHuffman Tree built successfully.\n";
+
+            // Display the generated codes.
+            displayCodes();
+
+        } else if (choice == 2) {
+
+            // Convert original text into binary codes.
+            string encoded = encode(text);
+
+            cout << "\nOriginal Text : " << text << "\n";
+            cout << "Encoded Text  : " << encoded << "\n";
+
+            // Display character codes.
+            displayCodes();
+
+        } else if (choice == 3) {
+
+            // First encode the original text.
+            string encoded = encode(text);
+
+            // Decode it using the Huffman tree.
+            string decoded = decode(encoded, g_root);
+
+            cout << "\nEncoded Text : " << encoded << "\n";
+            cout << "Decoded Text : " << decoded << "\n";
+
+        } else if (choice == 4) {
+
+            cout << "Program terminated.\n";
+
+        } else {
+
+            cout << "Invalid choice.\n";
+        }
+
+    } while (choice != 4);
+}
+
+
+// STEP 11: MAIN FUNCTION
+
+int main() {
+
+    // Start program execution.
+    run();
+
+    return 0;
+}

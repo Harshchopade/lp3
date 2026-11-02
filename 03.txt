@@ -1,0 +1,209 @@
+/*
+ * QUESTION 3 (DAA) : Solve the fractional Knapsack problem using a greedy method.
+ *
+ * Given n items, each with a value and a weight, and a knapsack of a fixed
+ * capacity, fill the knapsack so that the total value is maximum. Unlike the
+ * 0/1 knapsack, here we are ALLOWED to cut an item and take only a fraction
+ * of it (taking a fraction f of an item gives f * value and weighs f * weight).
+ *
+ * HOW IT WORKS (GREEDY STRATEGY):
+ *   1. Compute value/weight ratio for every item.
+ *   2. Sort items in DECREASING order of this ratio. The item with the highest
+ *      ratio gives the most value per kilogram, so it is the "best deal".
+ *   3. Walk through the sorted list:
+ *        - If the whole item fits in the remaining capacity, take it fully.
+ *        - Otherwise take only the fraction that fits, then stop.
+ *   This greedy choice is provably OPTIMAL for the fractional version.
+ *
+ * COMPLEXITY:
+ *   - Sorting dominates : O(n log n)
+ *   - Single linear scan: O(n)
+ *   - Total             : O(n log n) time, O(n) space.
+ *
+ * NOTES / INFO:
+ *   - Input is entered item by item (value, then weight), same as the lab
+ *     exercise, followed by the knapsack capacity.
+ *   - Works with integer or fractional values and weights (uses double).
+ *   - Contrast with 0/1 knapsack: greedy fails for 0/1 version, DP is needed.
+  *
+ * COMMANDS (run from inside this folder):
+ *   install dependencies : sudo apt install g++
+ *   compile and run      : g++ -std=c++17 -Wall q3_FractionalKnapsack.cpp -o q3_FractionalKnapsack && ./q3_FractionalKnapsack
+*/
+
+
+/*
+ QUESTION 3 (DAA):
+ Solve Fractional Knapsack using Greedy Algorithm.
+
+ Main idea:
+ Select items according to their value/weight ratio.
+
+ Formula:
+ Ratio = Value / Weight
+
+ Select the item with the highest ratio first.
+ We can take a complete item or a fraction of an item.
+*/
+
+#include <algorithm>  // For sorting items
+#include <iomanip>    // For setprecision()
+#include <iostream>   // For cin and cout
+#include <vector>     // For storing items
+
+using namespace std;
+
+
+// STEP 1: CREATE ITEM STRUCTURE
+
+struct Item {
+
+    double value;   // Stores the value of the item
+    double weight;  // Stores the weight of the item
+    double ratio;   // Stores value / weight ratio
+};
+
+
+// STEP 2: TAKE ITEM INPUT FROM USER
+
+vector<Item> readItems(int itemCount) {
+
+    // Create a vector to store all items.
+    vector<Item> items(itemCount);
+
+    cout << "Enter value and weight of each item:\n";
+
+    // Take value and weight of every item.
+    for (int i = 0; i < itemCount; ++i) {
+
+        cout << "Item " << (i + 1) << " value: ";
+        cin >> items[i].value;
+
+        cout << "Item " << (i + 1) << " weight: ";
+        cin >> items[i].weight;
+
+        // Calculate value-to-weight ratio.
+        items[i].ratio =
+            items[i].value / items[i].weight;
+    }
+
+    // Return all entered items.
+    return items;
+}
+
+
+// STEP 3: SORT ITEMS BY RATIO
+
+void sortByRatio(vector<Item>& items) {
+
+    // Sort items in descending order of ratio.
+    // Highest ratio comes first.
+    sort(items.begin(), items.end(),
+
+         [](const Item& a, const Item& b) {
+             return a.ratio > b.ratio;
+         });
+}
+
+
+// STEP 4: FILL THE KNAPSACK
+
+double fillKnapsack(vector<Item> items, double capacity) {
+
+    // First sort items according to their ratio.
+    sortByRatio(items);
+
+    // Store the total value collected.
+    double totalValue = 0.0;
+
+    // Store the remaining capacity of the bag.
+    double remaining = capacity;
+
+    cout << "\nSelected Items:\n";
+
+    // Visit each item in sorted order.
+    for (size_t i = 0; i < items.size(); ++i) {
+
+        // Stop if the bag is completely full.
+        if (remaining <= 0)
+            break;
+
+        // Check whether the complete item fits.
+        if (items[i].weight <= remaining) {
+
+            // Take 100% of the item.
+            remaining -= items[i].weight;
+
+            // Add the complete item's value.
+            totalValue += items[i].value;
+
+            cout << "Item " << (i + 1)
+                 << " -> 100% selected\n";
+
+        } else {
+
+            // If the complete item does not fit,
+            // calculate the fraction that can fit.
+
+            double fraction =
+                remaining / items[i].weight;
+
+            // Add only the corresponding fraction of value.
+            totalValue += items[i].value * fraction;
+
+            // Display the selected percentage.
+            cout << "Item " << (i + 1)
+                 << " -> " << fixed << setprecision(2)
+                 << fraction * 100
+                 << "% selected\n";
+
+            // Bag is now completely full.
+            remaining = 0;
+        }
+    }
+
+    // Return the maximum value obtained.
+    return totalValue;
+}
+
+
+// STEP 5: RUN FUNCTION
+
+void run() {
+
+    int itemCount;
+
+    // Ask how many items are available.
+    cout << "Enter number of items: ";
+    cin >> itemCount;
+
+    // Read all item details.
+    vector<Item> items = readItems(itemCount);
+
+    double capacity;
+
+    // Ask for knapsack capacity.
+    cout << "Enter knapsack capacity: ";
+    cin >> capacity;
+
+    // Calculate maximum possible value.
+    double maxValue =
+        fillKnapsack(items, capacity);
+
+    // Display answer up to 2 decimal places.
+    cout << fixed << setprecision(2);
+
+    cout << "\nMaximum value = "
+         << maxValue << "\n";
+}
+
+
+// STEP 6: MAIN FUNCTION
+
+int main() {
+
+    // Start program execution.
+    run();
+
+    return 0;
+}

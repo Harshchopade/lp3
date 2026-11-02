@@ -1,0 +1,157 @@
+/*
+ * QUESTION 1 (DAA) : Fibonacci numbers - recursive and non-recursive with complexity analysis.
+ *
+ * The Fibonacci sequence starts 0, 1; every later term is the sum of the two
+ * previous ones: F(0)=0, F(1)=1, F(n)=F(n-1)+F(n-2).
+ *
+ * HOW IT WORKS:
+ *   ITERATIVE (bottom-up):
+ *     Keep just two running values a = F(i-2) and b = F(i-1) and update them
+ *     in a loop n-1 times. O(n) time, O(1) space, no repeated work.
+ *   RECURSIVE (definition -> code):
+ *     Directly apply the formula: F(n) = F(n-1) + F(n-2) with the two base
+ *     cases above. Easy to read but HORRIBLY slow, because:
+ *       - F(n-1) and F(n-2) overlap and recompute the same subproblems;
+ *       - the call tree holds ~1.618^n nodes (golden-ratio growth).
+ *     Running times: iterative O(n) vs recursive O(2^n) (roughly).
+ *
+ * WHY THIS COMPARISON MATTERS (lecture point):
+ *   This exercise is the standard illustration of why naive recursion can be
+ *   exponentially wasteful, and why memoisation / dynamic programming fixes
+ *   it: storing each F(k) once turns 2^n calls into n additions.
+ *
+ * NOTES / INFO:
+ *   - Both versions are in one file to make the comparison honest; main()
+ *     still contains exactly one function call.
+ *   - Results are kept in long long: F(92) is the largest value that fits;
+ *     after that the numbers silently overflow, which is why input is capped.
+  *
+ * COMMANDS (run from inside this folder):
+ *   install dependencies : sudo apt install g++
+ *   compile and run      : g++ -std=c++17 -Wall q1_Fibonacci.cpp -o q1_Fibonacci && ./q1_Fibonacci
+*/
+
+
+
+/*
+ QUESTION 1 (DAA):
+ Write a recursive and non-recursive program
+ to calculate Fibonacci numbers and analyze complexity.
+
+ Fibonacci Series:
+ 0, 1, 1, 2, 3, 5, 8, 13, 21, ...
+
+ Formula:
+ F(0) = 0
+ F(1) = 1
+ F(n) = F(n-1) + F(n-2)
+
+ Two methods:
+ 1. Iterative (Non-recursive)
+ 2. Recursive
+*/
+
+#include <iostream>  // Used for input and output
+using namespace std;
+
+// Maximum allowed input.
+// F(92) fits in the long long data type.
+const int LIMIT = 92;
+
+
+// STEP 1: ITERATIVE FIBONACCI FUNCTION
+// Non-recursive method using a loop.
+// Time Complexity: O(n)
+// Space Complexity: O(1)
+
+long long fibonacciIterative(int n) {
+
+    // Base condition:
+    // If n is 0 or 1, return n directly.
+    if (n <= 1)
+        return n;
+
+    // Store the first two Fibonacci numbers.
+    long long a = 0;
+    long long b = 1;
+
+    // Calculate Fibonacci numbers from 2 to n.
+    for (int i = 2; i <= n; ++i) {
+
+        // Add the previous two numbers.
+        long long c = a + b;
+
+        // Update the values for the next iteration.
+        a = b;
+        b = c;
+    }
+
+    // Return the nth Fibonacci number.
+    return b;
+}
+
+
+// STEP 2: RECURSIVE FIBONACCI FUNCTION
+// Function calls itself to calculate Fibonacci numbers.
+// Time Complexity: O(2^n) approximately
+// Space Complexity: O(n)
+
+long long fibonacciRecursive(int n) {
+
+    // Base condition 1:
+    // If n is 0, return 0.
+    if (n == 0)
+        return 0;
+
+    // Base condition 2:
+    // If n is 1, return 1.
+    if (n == 1)
+        return 1;
+
+    // Recursive condition:
+    // Add the previous two Fibonacci numbers.
+    return fibonacciRecursive(n - 1)
+         + fibonacciRecursive(n - 2);
+}
+
+
+// STEP 3: RUN FUNCTION
+void run() {
+
+    // Ask the user to enter a number.
+    int n;
+
+    cout << "Enter n (0 to " << LIMIT << "): ";
+    cin >> n;
+
+    // Check whether input is valid.
+    if (cin.fail() || n < 0 || n > LIMIT) {
+        cout << "Invalid input.\n";
+        return;
+    }
+
+    // Calculate Fibonacci using iterative method.
+    cout << "Iterative result : F("
+         << n << ") = "
+         << fibonacciIterative(n) << "\n";
+
+    // Calculate Fibonacci using recursive method.
+    cout << "Recursive result : F("
+         << n << ") = "
+         << fibonacciRecursive(n) << "\n";
+
+    // Display an observation.
+    cout << "\nObservation:\n";
+    cout << "Both methods give the same result.\n";
+    cout << "Iterative method is faster than recursive method.\n";
+}
+
+
+// STEP 4: MAIN FUNCTION
+int main() {
+
+    // Call the run function.
+    run();
+
+    return 0;
+}

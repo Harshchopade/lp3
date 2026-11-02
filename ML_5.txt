@@ -1,0 +1,160 @@
+QUESTION 5 (ML):
+Implement the Gradient Descent Algorithm to find the local minima of the
+function y = (x + 3)^2 starting from the point x = 2.
+
+HOW IT WORKS
+    1. f(x) = (x + 3)^2 is a parabola with its minimum at x = -3 (f = 0).
+    2. f'(x) = 2(x + 3) is the slope: its sign points uphill.
+    3. Update rule: x_new = x - learning_rate * f'(x).
+    4. Repeat. Steps shrink as the slope fades, so x settles near -3.
+
+    At learning rate 0.1 and 100 iterations, x ends around -2.999996.
+    A rate that is too large overshoots; 1.0 never settles.
+
+STEPS
+    1. Define the function and its derivative
+    2. Set the starting point and hyper-parameters
+    3. Gradient descent function
+    4. Run gradient descent
+    5. Print the minimum
+    6. Effect of the learning rate
+    7. Observation
+    8. Plots with matplotlib
+
+# Step 1: Define the function and its derivative
+
+def f(x):
+    # Objective function: y = (x + 3)^2
+    # Our goal is to find the minimum value of this function.
+    return (x + 3) ** 2
+
+
+def derivative(x):
+    # Derivative of (x + 3)^2 is 2(x + 3).
+    # It tells us the slope of the function.
+    return 2 * (x + 3)
+
+
+# Step 2: Set starting point and parameters
+
+x_start = 2          # Initial value of x
+learning_rate = 0.1  # Controls the size of each step
+iterations = 100     # Number of times to update x
+
+
+# Step 3: Implement Gradient Descent
+
+def gradient_descent(x_start, learning_rate, iterations, verbose_every=10):
+
+    x = x_start
+    path = [(x, f(x))]  # Store starting point for plotting
+
+    for i in range(iterations):
+
+        gradient = derivative(x)  # Calculate slope
+
+        # Update x by moving in the opposite direction of the slope
+        x = x - learning_rate * gradient
+
+        path.append((x, f(x)))  # Store updated x and function value
+
+        # Display progress after every 10 iterations
+        if i % verbose_every == 0:
+            print(f"iter {i:3d}: x = {x:.6f}, f(x) = {f(x):.6f}")
+
+    return x, path
+
+
+# Step 4: Run Gradient Descent
+
+x_min, descent_path = gradient_descent(
+    x_start, learning_rate, iterations
+)
+
+
+# Step 5: Display the minimum
+
+print("\nMinimum point x =", round(x_min, 6))
+print("Minimum value y =", round(f(x_min), 10))
+print("Expected minimum: x = -3, y = 0")
+
+
+# Step 6: Check the effect of different learning rates
+
+# Different learning rates show how quickly the algorithm converges.
+for rate in [0.01, 0.1, 0.5, 0.9, 1.0]:
+
+    final_x, _ = gradient_descent(
+        2, rate, 100, verbose_every=1000
+    )
+
+    print(
+        f"learning_rate={rate:<5} -> "
+        f"x={final_x:.6f}, f(x)={f(final_x):.6g}"
+    )
+
+
+# Step 7: Display observation
+
+print("\nObservation")
+print("Gradient descent moves against the slope.")
+print("Near the minimum, the slope becomes smaller.")
+print("A very large learning rate causes overshooting or divergence.")
+
+
+# Step 8: Plot graphs using Matplotlib
+
+import matplotlib.pyplot as plt
+
+# Extract x and y values from the stored path
+xs = [point[0] for point in descent_path]
+ys = [point[1] for point in descent_path]
+
+# Generate points for drawing the parabola
+curve_x = [-6 + i * 0.01 for i in range(901)]
+curve_y = [f(value) for value in curve_x]
+
+# Plot 1: Function and gradient descent steps
+
+fig, axis = plt.subplots(figsize=(7, 5))
+
+axis.plot(curve_x, curve_y, label="f(x) = (x + 3)^2")
+axis.plot(xs, ys, "o-", markersize=4, label="Descent steps")
+axis.plot(x_start, f(x_start), "go", label="Starting point")
+axis.plot(x_min, f(x_min), "b*", markersize=14, label="Minimum found")
+
+axis.set_title("Gradient Descent")
+axis.set_xlabel("x")
+axis.set_ylabel("f(x)")
+axis.grid()
+axis.legend()
+
+fig.tight_layout()
+plt.show()
+
+
+# Plot 2: Compare convergence for different learning rates
+
+fig, axis = plt.subplots(figsize=(7, 5))
+
+for rate in [0.01, 0.1, 0.5, 0.9, 1.0]:
+
+    _, path = gradient_descent(
+        x_start, rate, iterations, verbose_every=1000
+    )
+
+    # Plot function value at every iteration
+    axis.plot(
+        [value for _, value in path],
+        label=f"lr = {rate}"
+    )
+
+axis.set_title("Convergence for Different Learning Rates")
+axis.set_xlabel("Iteration")
+axis.set_ylabel("f(x)")
+axis.set_yscale("log")
+axis.grid()
+axis.legend()
+
+fig.tight_layout()
+plt.show()
